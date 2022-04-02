@@ -30,7 +30,7 @@ CREATE TABLE recepcion(
     pesoNeto INT(5),
     patente VARCHAR(9),
     chofer VARCHAR(60),
-    nGuia BIGINT(15),
+    nGuia VARCHAR(60),
     fechaEntrada DATE NOT NULL,
     horaEntrada TIME NOT NULL,
     fechaSalida DATE,
@@ -80,13 +80,14 @@ CREATE TABLE salida(
     idSalida INT(11) NOT NULL AUTO_INCREMENT,
     nLote VARCHAR(8) NOT NULL,
     idCajon INT(11) NOT NULL,
-    humedadSalida DECIMAL(3, 1) NOT NULL,
+    humedadNSC DECIMAL(5, 2) NOT NULL, -- Campo actualizado
+    humedadNCC DECIMAL(5, 2) NOT NULL, -- Campo nuevo
     almacenUnitario1 VARCHAR(30) NOT NULL,
     almacenUnitario2 VARCHAR(30) NOT NULL,
     almacenUnitario3 VARCHAR(30) NOT NULL,
-    envasesUnitario1 TINYINT DEFAULT 0 NOT NULL,
-    envasesUnitario2 TINYINT DEFAULT 0 NOT NULL,
-    envasesUnitario3 TINYINT DEFAULT 0 NOT NULL,
+    envasesUnitario1 DECIMAL(3, 1) NOT NULL,
+    envasesUnitario2 DECIMAL(3, 1) NOT NULL,
+    envasesUnitario3 DECIMAL(3, 1) NOT NULL,
     pesoUnitario1 INT(6) DEFAULT 0 NOT NULL,
     pesoUnitario2 INT(6) DEFAULT 0 NOT NULL,
     pesoUnitario3 INT(6) DEFAULT 0 NOT NULL,
@@ -95,6 +96,8 @@ CREATE TABLE salida(
     horaDespacho TIME DEFAULT NULL,
     fechaSalida DATE DEFAULT NULL,
     horaSalida TIME DEFAULT NULL,
+    descarga INT(5) DEFAULT 0, -- Campo nuevo
+    turnoSalida VARCHAR(10) DEFAULT NULL, --Campo nuevo
     observacion VARCHAR(255) DEFAULT NULL,
     PRIMARY KEY(idSalida),
     UNIQUE (nLote, idCajon),

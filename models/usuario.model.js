@@ -21,7 +21,7 @@ const crearUsuario = async (req, res = response) => {
 
 const listarUsuarios = async (req, res = response) => {
     try {
-        let sql = 'SELECT id, nombre, rol FROM usuarios WHERE rol = "Usuario" OR rol = "Supervisor" ';
+        let sql = 'SELECT id, nombre, rol FROM usuarios WHERE rol != "Administrador"';
         const [rows] = await trackapp.query(sql);
         res.json(rows) // -> listado de usuarios
     } catch (error) {

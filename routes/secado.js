@@ -10,12 +10,16 @@ const { validarJWT } = require('../middlewares/validar-jwt');
 const { validarCampos } = require('../middlewares/validar-campos');
 
 const SecadoModel = require('../models/secado.model');
+const { validarSoloLectura } = require('../middlewares/validar-roles');
 
 // Funcion para traer y actualizar un lote
 router.get('/', [validarJWT], SecadoModel.listarSecado);
 
+router.get('/:lote', validarJWT, SecadoModel.cargarDatosLote);
+
 router.post('/', [
     validarJWT,
+    validarSoloLectura,
     body('lote', 'El campo lote es obigatorio').not().isEmpty(),
     body('cajon', 'El campo cajon es obigatorio').not().isEmpty(),
     body('planta', 'El campo planta es obigatorio').not().isEmpty(),
@@ -25,14 +29,11 @@ router.post('/', [
 
 router.put('/', [
     validarJWT,
+    validarSoloLectura,
     body('id', 'El id del registro es obligatorio').not().isEmpty(),
     validarCampos,
 ], SecadoModel.actualizarCajon);
 
-// router.get('/:lote', validarJWT, SecadoModel.listarCajones);
-
-router.get('/:lote', validarJWT, SecadoModel.cargarDatosLote);
-
-router.delete('/:id', validarJWT, SecadoModel.eliminarCajon);
+router.delete('/:id', [validarJWT, validarSoloLectura], SecadoModel.eliminarCajon);
 
 module.exports = router;

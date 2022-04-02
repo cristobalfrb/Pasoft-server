@@ -15,7 +15,7 @@ const obtenerLoteRecepcion = async (req, res = response) => {
         if (loteTrackapp.length > 0) {
 
             let datosLote = loteTrackapp[0];
-            datosLote.estado = (datosLote.estado) ? 'COMPLETO' : 'ENTRADA';
+            datosLote.estado = (datosLote.estado) ? 'SALIDA' : 'ENTRADA';
             // Buscar los envases
             let sql = `SELECT tipo, cantidad FROM envases WHERE nLote = ?`;
             const [envasesTrackapp] = await trackapp.query(sql, [lote]);
@@ -86,7 +86,9 @@ async function obtenerLoteEkilibrio(lote) {
                 horaEntrada: datosLote.HORA_ENTRADA,
                 fechaSalida: datosLote.FECHA_SALIDA,
                 horaSalida: datosLote.HORA_SALIDA,
-                estado: (datosLote.ESTADO == 'ENTRADA') ? 0 : 1,
+                estado: datosLote.ESTADO,
+                estadoIng: (datosLote.ESTADO == 'ENTRADA') ? 0 : 1,
+
             }
             // Agregar el numero de lote a envases equilibrio
             envasesEkilibrio.forEach((envase, index) => { envasesEkilibrio[index].nLote = datosLote.NUMERO_LOTE });
@@ -106,7 +108,7 @@ async function agregarLote(l, e) {
 
     let sql = `INSERT INTO recepcion(nLote, nomArticulo, nomVariedad, nomProductor, pesoBruto, tara, pesoNeto, patente, chofer, nGuia, fechaEntrada, horaEntrada, fechaSalida, horaSalida, observacion, estado) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
     try {
-        const [rows] = await trackapp.query(sql, [l.nLote, l.nomArticulo, l.nomVariedad, l.nomProductor, l.pesoBruto, l.tara, l.pesoNeto, l.patente, l.chofer, l.nGuia, l.fechaEntrada, l.horaEntrada, l.fechaSalida, l.horaSalida, l.observacion, l.estado]);
+        const [rows] = await trackapp.query(sql, [l.nLote, l.nomArticulo, l.nomVariedad, l.nomProductor, l.pesoBruto, l.tara, l.pesoNeto, l.patente, l.chofer, l.nGuia, l.fechaEntrada, l.horaEntrada, l.fechaSalida, l.horaSalida, l.observacion, l.estadoIng]);
         if (rows.affectedRows > 0) {
             // Se agrego ahora agregar los envases
             // los envases son un array de objetos por tanto se deben poder insertar varios a la vez
@@ -149,10 +151,10 @@ const actualizarLote = async (req, res = response) => {
         let sql = `UPDATE recepcion SET nomArticulo = ?, nomVariedad = ?, nomProductor = ?, pesoBruto = ?, tara = ?, 
                    pesoNeto = ?, patente = ?, chofer = ?, nGuia = ?, fechaSalida = ?, horaSalida = ?, observacion = ?, estado = ?  
                    WHERE nLote = ?`;
-        const [rows] = await trackapp.query(sql, [l.nomArticulo, l.nomVariedad, l.nomProductor, l.pesoBruto, l.tara, l.pesoNeto, l.patente, l.chofer, l.nGuia, l.fechaSalida, l.horaSalida, l.observacion, l.estado, lote]);
+        const [rows] = await trackapp.query(sql, [l.nomArticulo, l.nomVariedad, l.nomProductor, l.pesoBruto, l.tara, l.pesoNeto, l.patente, l.chofer, l.nGuia, l.fechaSalida, l.horaSalida, l.observacion, l.estadoIng, lote]);
         if (rows.affectedRows > 0) {
             // Si funciono enviar respuesta 
-            l.estado = (l.estado) ? 'COMPLETO' : 'ENTRADA';
+            l.estado = (l.estado) ? 'SALIDA' : 'ENTRADA';
             res.json({ ok: true, lote: l, msg: `Lote ${lote} actualizado correctamente.` });
         } else {
             // No funciona enviar error
@@ -207,6 +209,33 @@ const listarLotesEkilibrio = async (req, res = response) => {
     }
 }
 
+const actualizarTodo = async (req, res = response) => {
+    console.log()
+    let sql = `UPDATE trackapp.recepcion re 
+               LEFT JOIN ekilibrio.pesaje_lote pl ON re.nLote = pl.NUMERO_LOTE
+               LEFT JOIN ekilibrio.pesaje pe ON pe.ID_PESAJE  = pl.ID_PESAJE
+               SET re.nomArticulo = pl.NOMBRE_PRODUCTO,
+               re.nomVariedad = pl.DESCRIPCION_VARIEDAD,
+               re.nomProductor = pe.RAZONSOCIAL_CLIENTE,
+               re.pesoBruto = pe.PESO_BRUTO,
+               re.tara = pe.PESO_TARA,
+               re.pesoNeto = pe.PESO_NETO,
+               re.patente = pe.PATENTE_CAMION,
+               re.chofer = pe.NOMBRE_CHOFER,
+               re.nGuia = pe.GUIA_DESPACHO,
+               re.observacion = pe.OBSERVACION,
+               re.estado = IF(pe.ESTADO = 'SALIDA', 1, 0)
+               WHERE re.nLote = pl.NUMERO_LOTE;`;
+    try {
+        const [rows] = await ekilibrio.query(sql);
+        console.log(rows);
+        res.json({msg: 'Lotes actualizados Correctamente'});
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: 'Error interno al listar datos ekilibrio' });
+    }
+}
+
 module.exports = {
     obtenerLoteRecepcion,
     listarRecepciones,
@@ -215,4 +244,5 @@ module.exports = {
     obtenerLoteEkilibrio,
     agregarLote,
     listarLotesEkilibrio,
+    actualizarTodo,
 }

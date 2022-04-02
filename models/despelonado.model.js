@@ -25,7 +25,7 @@ const obtenerLoteDespelonado = async (req, res = response) => {
             const datosEkilibrio = await obtenerLoteEkilibrio(lote);
             if (datosEkilibrio instanceof Error) return res.status(400).json({ msg: datosEkilibrio.message });
 
-            //Transforma el objeto de envases en arry de arrays (valido para insertar)
+            //Transforma el objeto de envases en array de arrays (valido para insertar)
             const arrayEnvaseEkilibrio = datosEkilibrio.envasesEkilibrio.map(Object.values);
             // Agregar el lote y los envases
             agregarLote(datosEkilibrio.datosLoteEnvio, arrayEnvaseEkilibrio);
@@ -89,19 +89,20 @@ const listarDespelonado = async (req, res = response) => {
     (planta) ? params.push(planta) : null;
 
     let sql = `SELECT de.nLote, de.fechaEntradaDes, de.horaEntradaDes, de.fechaSalidaDes, de.horaSalidaDes, de.observacion, 
-               de.planta, de.turno, re.pesoNeto, re.nomProductor, re.nomVariedad 
+               de.planta, de.turno, re.pesoNeto, re.nomProductor, re.nomVariedad, re.tara, re.pesoBruto, en.tipo, en.cantidad
                FROM despelonado de
-               INNER JOIN recepcion re on re.nLote = de.nLote 
+               INNER JOIN recepcion re on re.nLote = de.nLote
+               INNER JOIN envases en on en.nLote = de.nLote
                WHERE de.fechaEntradaDes
                ${(desde && hasta) ? " BETWEEN ? AND ?" : ""}
                ${(turno) ? "AND de.turno = ?" : ""}
                ${(planta) ? "AND de.planta = ?" : ""}
+               GROUP BY de.nLote
                ORDER BY de.fechaEntradaDes DESC, de.horaEntradaDes DESC`;
     try {
         const [rows] = await trackapp.query(sql, params);
         res.json(rows);
     } catch (error) {
-        console.log(error)
         res.status(500).json({ msg: 'Error interno al listar despelonado' });
     }
 }

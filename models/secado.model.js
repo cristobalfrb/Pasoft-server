@@ -4,16 +4,26 @@ const { response } = require('express');
 const { trackapp } = require('../database/db');
 
 const listarSecado = async (req, res = response) => {
-    const { inicio, termino } = req.query;
-    let sql = `SELECT se.nLote, se.fechaEntradaSec, se.horaEntradaSec, se.nCajon, de.planta, se.humedad, se.cerrado,
+    const { desde, hasta, planta, turno } = req.query;
+
+    let params = [];
+
+    (desde && hasta) ? params.push(desde, hasta) : null;
+    (turno) ? params.push(turno) : null;
+    (planta) ? params.push(planta) : null;
+
+    let sql = `SELECT se.nLote, se.fechaEntradaSec, se.horaEntradaSec, se.nCajon, de.planta, de.turno, se.humedad, se.cerrado,
                re.nomProductor, re.nomArticulo, re.nomVariedad
                FROM secado se
                INNER JOIN despelonado de on de.nLote = se.nLote 
                INNER JOIN recepcion re on re.nLote = se.nLote
-               ${(inicio != '' && termino != '') ? "WHERE fechaEntradaSec BETWEEN ? AND ?" : ''}
+               WHERE se.fechaEntradaSec
+               ${(desde && hasta) ? " BETWEEN ? AND ?" : ""}
+               ${(turno) ? "AND de.turno = ?" : ""}
+               ${(planta) ? "AND de.planta = ?" : ""}
                ORDER BY se.fechaEntradaSec DESC, se.horaEntradaSec DESC`;
     try {
-        const [rows] = await trackapp.query(sql, [inicio, termino]);
+        const [rows] = await trackapp.query(sql, params);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ msg: 'Error interno al listar registros secado.' });
